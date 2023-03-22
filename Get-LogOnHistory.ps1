@@ -18,6 +18,18 @@ param (
     $IncludeLogOff
     ,
     [Parameter()]
+    [switch]
+    $IncludeLogFailure
+    ,
+    [Parameter()]
+    [switch]
+    $LogFailureOnly
+    ,
+    [Parameter()]
+    [switch]
+    $LogRunAs
+    ,
+    [Parameter()]
     [string]
     $ComputerName = $env:COMPUTERNAME
 )
@@ -33,6 +45,23 @@ $filter = @{
 if ($IncludeLogOff) {
     $filter['ID'] += '4634'
 }
+
+# If IncludeLogFailure is specified, add event 4634 to the filter
+if ($IncludeLogFailure) {
+    $filter['ID'] += '4634'
+}
+
+# If LogRunAs is specified, set event 4648 to the filter
+# 4648 	A user successfully logged on to a computer using explicit credentials while already logged on as a different user.
+if ($LogRunAs) {
+    $filter['ID'] += '4648'
+}
+
+# If LogFailureOnly is specified, set event 4625 to the filter
+if ($LogFailureOnly) {
+    $filter['ID'] = '4625'
+}
+
 
 # If StartDate is specified
 if ($StartTime) {
@@ -80,8 +109,14 @@ try {
                 if ($event.Id -eq '4624') {
                     'LogOn'
                 }
-                else {
+                if ($event.Id -eq '4625') {
+                    'LogFailure'
+                }
+                if ($event.Id -eq '4634') {
                     'LogOff'
+                }
+                if ($event.Id -eq '4648') {
+                    'RunAs'
                 }
             )
             User         = $(
